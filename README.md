@@ -386,7 +386,6 @@ Follow this 3-minute sequence to deliver a high-impact live demonstration:
 |---|---|
 | **shivesa** | Frontend SCADA Architecture, Stitch UI Implementation, React, Tailwind CSS |
 | **rithick c r** | Physical Simulation Backend, FastAPI Service, Hydraulic Mass-Balance Engine |
-| **aswin076** | ML Leak Detection Modeling, Data Engineering, Validation & Optimization |
 
 ---
 
