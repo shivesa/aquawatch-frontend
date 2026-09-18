@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { backendApi } from '../api/backendClient';
 
 const TelemetryContext = createContext(null);
 
@@ -202,6 +203,38 @@ export function TelemetryProvider({ children }) {
   const [baseTariff, setBaseTariff] = useState(100); // INR per m³
   const [zldSurcharge, setZldSurcharge] = useState(35); // INR per m³
 
+  // Live Backend Integration State
+  const [backendConnected, setBackendConnected] = useState(false);
+  const [backendSnapshot, setBackendSnapshot] = useState(null);
+  const [backendSyncTime, setBackendSyncTime] = useState(null);
+
+  // Poll FastAPI Backend (http://127.0.0.1:8000)
+  useEffect(() => {
+    let active = true;
+
+    async function checkAndPoll() {
+      try {
+        const state = await backendApi.fetchCurrentState();
+        if (active && state && state.flows) {
+          setBackendConnected(true);
+          setBackendSnapshot(state);
+          setBackendSyncTime(new Date());
+        }
+      } catch {
+        if (active) {
+          setBackendConnected(false);
+        }
+      }
+    }
+
+    checkAndPoll();
+    const interval = setInterval(checkAndPoll, 1800);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   // Live Timer for elapsed time
   useEffect(() => {
     const timer = setInterval(() => {
@@ -217,20 +250,63 @@ export function TelemetryProvider({ children }) {
     return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
   }, [elapsedSeconds]);
 
-  // Derived effective values
+  // Derived effective values (harmonizing backend physics & local preset simulation)
   const effectiveLeakRate = useMemo(() => {
     if (isolatedValves.includes('SV-04') || incidentStatus === 'RESOLVED') {
       return 0;
+    }
+    if (backendConnected && backendSnapshot?.active_leaks) {
+      const activeLeaksTotal = Object.values(backendSnapshot.active_leaks).reduce((a, b) => a + b, 0);
+      if (activeLeaksTotal > 0) return Math.round(activeLeaksTotal);
     }
     if (currentScenarioKey === 'dyeing_leak') {
       return simLeakRate;
     }
     return scenario.leakGap;
-  }, [isolatedValves, incidentStatus, currentScenarioKey, simLeakRate, scenario.leakGap]);
+  }, [isolatedValves, incidentStatus, backendConnected, backendSnapshot, currentScenarioKey, simLeakRate, scenario.leakGap]);
 
   const effectiveInflow = useMemo(() => {
+    if (backendConnected && backendSnapshot?.flows?.J1) {
+      return Math.round(backendSnapshot.flows.J1);
+    }
     return scenario.expectedInflow + effectiveLeakRate;
-  }, [scenario.expectedInflow, effectiveLeakRate]);
+  }, [backendConnected, backendSnapshot, scenario.expectedInflow, effectiveLeakRate]);
+
+  // Live flows per zone
+  const liveDyeingFlow = useMemo(() => {
+    if (backendConnected && backendSnapshot?.flows?.J2) {
+      return Math.round(backendSnapshot.flows.J2);
+    }
+    return scenario.dyeingFlow;
+  }, [backendConnected, backendSnapshot, scenario.dyeingFlow]);
+
+  const liveWashingFlow = useMemo(() => {
+    if (backendConnected && backendSnapshot?.flows?.J3) {
+      return Math.round(backendSnapshot.flows.J3);
+    }
+    return scenario.washingFlow;
+  }, [backendConnected, backendSnapshot, scenario.washingFlow]);
+
+  const liveFinishingFlow = useMemo(() => {
+    if (backendConnected && backendSnapshot?.flows?.J4) {
+      return Math.round(backendSnapshot.flows.J4);
+    }
+    return scenario.rinsingFlow;
+  }, [backendConnected, backendSnapshot, scenario.rinsingFlow]);
+
+  const liveUtilityFlow = useMemo(() => {
+    if (backendConnected && backendSnapshot?.flows?.J7) {
+      return Math.round(backendSnapshot.flows.J7);
+    }
+    return 115;
+  }, [backendConnected, backendSnapshot]);
+
+  const liveHeaderPressure = useMemo(() => {
+    if (backendConnected && backendSnapshot?.pressures?.J1) {
+      return Number(backendSnapshot.pressures.J1.toFixed(1));
+    }
+    return scenario.headerPressure;
+  }, [backendConnected, backendSnapshot, scenario.headerPressure]);
 
   // Financial Calculations
   const financialImpact = useMemo(() => {
@@ -280,14 +356,18 @@ export function TelemetryProvider({ children }) {
     );
   };
 
-  // Toggle Valve Isolation
+  // Toggle Valve Isolation (SV-04 shuts off Branch A leak)
   const toggleValveIsolation = (valveId) => {
     setIsolatedValves((prev) => {
-      if (prev.includes(valveId)) {
-        return prev.filter((v) => v !== valveId);
-      } else {
-        return [...prev, valveId];
+      const willIsolate = !prev.includes(valveId);
+      if (backendConnected && valveId === 'SV-04') {
+        if (willIsolate) {
+          backendApi.clearLeak('J2').catch(() => {});
+        } else if (currentScenarioKey === 'dyeing_leak') {
+          backendApi.injectLeak('J2', simLeakRate).catch(() => {});
+        }
       }
+      return willIsolate ? [...prev, valveId] : prev.filter((v) => v !== valveId);
     });
   };
 
@@ -299,9 +379,24 @@ export function TelemetryProvider({ children }) {
         setSimLeakRate(240);
         setIsolatedValves([]);
         setIncidentStatus('OPEN');
+        if (backendConnected) {
+          backendApi.injectLeak('J2', 240).catch(() => {});
+        }
       } else if (key === 'normal') {
         setSimLeakRate(0);
         setIncidentStatus('RESOLVED');
+        if (backendConnected) {
+          backendApi.clearLeak().catch(() => {});
+        }
+      } else if (key === 'high_production') {
+        setSimLeakRate(0);
+        setIncidentStatus('RESOLVED');
+        if (backendConnected) {
+          backendApi.clearLeak().catch(() => {});
+          ['M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8'].forEach((m) => {
+            backendApi.controlMachine(m, 180, 'RUNNING').catch(() => {});
+          });
+        }
       }
     }
   };
@@ -341,6 +436,14 @@ export function TelemetryProvider({ children }) {
     financialImpact,
     effectiveLeakRate,
     effectiveInflow,
+    liveDyeingFlow,
+    liveWashingFlow,
+    liveFinishingFlow,
+    liveUtilityFlow,
+    liveHeaderPressure,
+    backendConnected,
+    backendSnapshot,
+    backendSyncTime,
   };
 
   return (

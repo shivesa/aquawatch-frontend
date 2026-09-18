@@ -8,6 +8,7 @@ export default function TopAppBar() {
     setIsSimModalOpen,
     setActiveTab,
     currentScenarioKey,
+    backendConnected,
   } = useTelemetry();
 
   const isAlarm = effectiveLeakRate > 0;
@@ -42,11 +43,18 @@ export default function TopAppBar() {
           </p>
         </div>
 
-        {/* Live Simulation Flag Badge */}
-        <div class="ml-space-sm flex items-center gap-1.5 px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-900 text-label-caps font-label-caps font-semibold">
-          <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-          <span>LIVE SIMULATION</span>
-        </div>
+        {/* Live Simulation / Backend Status Badge */}
+        {backendConnected ? (
+          <div class="ml-space-sm flex items-center gap-1.5 px-2.5 py-0.5 rounded border border-emerald-400 bg-emerald-50 text-emerald-900 text-label-caps font-label-caps font-semibold">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>BACKEND LIVE (127.0.0.1:8000)</span>
+          </div>
+        ) : (
+          <div class="ml-space-sm flex items-center gap-1.5 px-2.5 py-0.5 rounded border border-slate-300 bg-slate-100 text-slate-700 text-label-caps font-label-caps font-semibold">
+            <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+            <span>SIMULATED (STANDALONE)</span>
+          </div>
+        )}
       </div>
 
       <div class="flex items-center gap-space-md">
