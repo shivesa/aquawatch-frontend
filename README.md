@@ -380,6 +380,20 @@ Follow this 3-minute sequence to deliver a high-impact live demonstration:
 
 ---
 
+## 👥 Team & Project Ecosystem
+
+| Member / Contributor | GitHub Profile | Primary Focus Area |
+|---|---|---|
+| **shivesa** | [@shivesa](https://github.com/shivesa) | Frontend SCADA Architecture, Stitch UI Implementation, React, Tailwind CSS |
+| **Kavin-byte86** | [@Kavin-byte86](https://github.com/Kavin-byte86) | Physical Simulation Backend, FastAPI Service, Hydraulic Mass-Balance Engine |
+| **aswin076** | [@aswin076](https://github.com/aswin076) | ML Dataset Generator, XGBoost Classifier, Validation & Optimization Reports |
+
+### 🔗 Project Ecosystem Repositories
+* 🖥 **Frontend SCADA UI & Integrated Prototype**: [https://github.com/shivesa/aquawatch-frontend](https://github.com/shivesa/aquawatch-frontend)
+* ⚙️ **Simulation Backend & 1-Year Synthetic ML Dataset Generator**: [https://github.com/Kavin-byte86/Industrial-water-network-leak-and-loss-detection](https://github.com/Kavin-byte86/Industrial-water-network-leak-and-loss-detection)
+
+---
+
 ## 📜 License
 
 This project is licensed under the [MIT License](LICENSE).
