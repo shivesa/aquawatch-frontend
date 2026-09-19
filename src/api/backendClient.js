@@ -112,4 +112,9 @@ export const backendApi = {
   async resetSimulation() {
     return await safeFetch(`${BASE_URL}/simulation/reset`, { method: 'POST' });
   },
+
+  /** Get ML prediction for current state */
+  async getMLPrediction() {
+    return await safeFetch(`${BASE_URL}/predict/ml/current`, {}, 1500);
+  },
 };

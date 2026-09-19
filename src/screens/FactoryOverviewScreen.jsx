@@ -11,6 +11,7 @@ export default function FactoryOverviewScreen() {
     setActiveTab,
     currentScenarioKey,
     isolatedValves,
+    mlPrediction,
   } = useTelemetry();
 
   const isLeak = effectiveLeakRate > 0;
@@ -131,6 +132,47 @@ export default function FactoryOverviewScreen() {
           </div>
           <p class="text-code font-code text-xs text-on-surface-variant mt-1 truncate">
             {isLeak ? 'Dyeing Zone sustained deviation' : 'All sub-meter feeds nominal'}
+          </p>
+        </div>
+
+        {/* KPI 4.5: ML Prediction */}
+        <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded shadow-xs">
+          <div className="flex items-start justify-between mb-1">
+            <span className="text-label-caps font-label-caps uppercase text-on-surface-variant font-semibold">
+              ML Status
+            </span>
+            <span
+              className={`px-1.5 py-0.5 text-code font-code text-[11px] font-bold rounded ${
+                mlPrediction?.prediction === 'ANOMALY' 
+                  ? 'bg-red-100 text-error' 
+                  : mlPrediction?.prediction === 'NORMAL'
+                  ? 'bg-green-100 text-tertiary'
+                  : 'bg-gray-100 text-outline-variant'
+              }`}
+            >
+              {mlPrediction?.prediction || 'N/A'}
+            </span>
+          </div>
+          <div
+            className={`text-metric-lg font-metric-lg tnum ${
+              mlPrediction?.prediction === 'ANOMALY' 
+                ? 'text-error' 
+                : mlPrediction?.prediction === 'NORMAL'
+                ? 'text-tertiary'
+                : 'text-outline-variant'
+            }`}
+          >
+            {mlPrediction?.prediction || 'Loading...'}{' '}
+            <span className="text-body-sm font-body-sm text-on-surface-variant font-normal">
+              {mlPrediction?.confidence ? `${Math.round(mlPrediction.confidence * 100)}% Confidence` : ''}
+            </span>
+          </div>
+          <p className="text-code font-code text-xs text-on-surface-variant mt-1 truncate">
+            {mlPrediction?.prediction === 'ANOMALY' 
+              ? 'RandomForest classifier detected abnormal pattern' 
+              : mlPrediction?.prediction === 'NORMAL'
+              ? 'Pattern matches normal operation'
+              : 'ML model loading...'}
           </p>
         </div>
 

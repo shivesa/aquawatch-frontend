@@ -10,6 +10,7 @@ export default function AnomaliesLogScreen() {
     setActiveTab,
     scenario,
     isolatedValves,
+    mlPrediction,
   } = useTelemetry();
 
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'high' | 'moderate' | 'low' | 'suppressed'
@@ -145,40 +146,57 @@ export default function AnomaliesLogScreen() {
               <span class="material-symbols-outlined text-[14px] text-primary">sync</span>
               <span>Polling: 250ms</span>
             </div>
+            
+            {/* ML Prediction Badge */}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 border rounded ${
+              mlPrediction?.prediction === 'ANOMALY' 
+                ? 'bg-red-50 border-red-200 text-error' 
+                : mlPrediction?.prediction === 'NORMAL'
+                ? 'bg-green-50 border-green-200 text-tertiary'
+                : 'bg-gray-50 border-gray-200 text-outline-variant'
+            }`}>
+              <span className="font-bold">ML</span>
+              <span>{mlPrediction?.prediction || 'Loading...'}</span>
+              {mlPrediction?.confidence && (
+                <span className="px-1 py-0.2 bg-white rounded text-[11px] font-semibold">
+                  {Math.round(mlPrediction.confidence * 100)}%
+                </span>
+              )}
+            </div>
           </div>
         </section>
 
         {/* KPI SUMMARY METRIC CARDS (Bento Grid) */}
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-space-md">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-space-md">
           {/* Metric 1: Active Anomalies */}
           <div
-            class={`bg-surface-container-lowest border-2 p-space-md rounded flex flex-col justify-between shadow-xs relative overflow-hidden ${
+            className={`bg-surface-container-lowest border-2 p-space-md rounded flex flex-col justify-between shadow-xs relative overflow-hidden ${
               isLeak ? 'border-error' : 'border-outline-variant'
             }`}
           >
-            <div class="flex items-start justify-between">
-              <span class="text-label-caps font-label-caps text-on-surface-variant tracking-wider uppercase font-semibold">
+            <div className="flex items-start justify-between">
+              <span className="text-label-caps font-label-caps text-on-surface-variant tracking-wider uppercase font-semibold">
                 Active Anomalies
               </span>
               <span
-                class={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-label-caps font-bold uppercase ${
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-label-caps font-bold uppercase ${
                   isLeak ? 'bg-error text-on-error' : 'bg-green-100 text-tertiary'
                 }`}
               >
-                {isLeak && <span class="w-1.5 h-1.5 rounded-full bg-white status-pulse"></span>}
+                {isLeak && <span className="w-1.5 h-1.5 rounded-full bg-white status-pulse"></span>}
                 {isLeak ? 'Critical' : 'Nominal'}
               </span>
             </div>
-            <div class="my-space-xs">
-              <div class="flex items-baseline gap-2">
+            <div className="my-space-xs">
+              <div className="flex items-baseline gap-2">
                 <span
-                  class={`text-metric-lg font-metric-lg tnum ${
+                  className={`text-metric-lg font-metric-lg tnum ${
                     isLeak ? 'text-error' : 'text-tertiary'
                   }`}
                 >
                   {isLeak ? '1' : '0'}
                 </span>
-                <span class="text-body-sm font-body-sm text-on-surface-variant font-medium">
+                <span className="text-body-sm font-body-sm text-on-surface-variant font-medium">
                   {isLeak ? 'Unresolved' : 'All Clear'}
                 </span>
               </div>

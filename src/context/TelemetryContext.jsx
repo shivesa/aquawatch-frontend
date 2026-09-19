@@ -207,6 +207,8 @@ export function TelemetryProvider({ children }) {
   const [backendConnected, setBackendConnected] = useState(false);
   const [backendSnapshot, setBackendSnapshot] = useState(null);
   const [backendSyncTime, setBackendSyncTime] = useState(null);
+  const [mlPrediction, setMlPrediction] = useState(null);
+  const [mlSyncTime, setMlSyncTime] = useState(null);
 
   // Poll FastAPI Backend (http://127.0.0.1:8000)
   useEffect(() => {
@@ -229,6 +231,32 @@ export function TelemetryProvider({ children }) {
 
     checkAndPoll();
     const interval = setInterval(checkAndPoll, 1800);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Poll ML Predictions
+  useEffect(() => {
+    let active = true;
+
+    async function pollML() {
+      try {
+        const prediction = await backendApi.getMLPrediction();
+        if (active && prediction && prediction.status === 'ok') {
+          setMlPrediction(prediction);
+          setMlSyncTime(new Date());
+        }
+      } catch {
+        if (active) {
+          setMlPrediction(null);
+        }
+      }
+    }
+
+    pollML();
+    const interval = setInterval(pollML, 3000); // Poll every 3 seconds
     return () => {
       active = false;
       clearInterval(interval);
@@ -444,6 +472,8 @@ export function TelemetryProvider({ children }) {
     backendConnected,
     backendSnapshot,
     backendSyncTime,
+    mlPrediction,
+    mlSyncTime,
   };
 
   return (
