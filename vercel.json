@@ -14,8 +14,5 @@
       "src": "/(.*)",
       "dest": "/$1"
     }
-  ],
-  "env": {
-    "VITE_BACKEND_URL": "@backend-url"
-  }
+  ]
 }
