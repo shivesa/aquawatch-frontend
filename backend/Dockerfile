@@ -19,8 +19,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
+# For Render compatibility
+ENV PORT=8000
 EXPOSE 8000
 
-# There is no app/__main__.py, so `python -m app` cannot start the service.
-# Run the ASGI app through uvicorn instead.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the ASGI app through uvicorn with PORT environment variable
+CMD sh -c "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
